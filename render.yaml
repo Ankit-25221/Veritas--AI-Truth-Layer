@@ -1,7 +1,7 @@
 services:
   # 🚀 Unified TruthLayer App (Frontend + Backend)
   - type: web
-    name: truthlayer-app
+    name: truthlayer-backend
     env: docker
     dockerfilePath: Dockerfile
     dockerContext: .
