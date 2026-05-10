@@ -1,27 +1,15 @@
 services:
-  # 🐍 Python FastAPI Backend
+  # 🚀 Unified TruthLayer App (Frontend + Backend)
   - type: web
-    name: truthlayer-backend
+    name: truthlayer-app
     env: docker
     dockerfilePath: backend/Dockerfile
-    dockerContext: backend
+    dockerContext: .
     envVars:
       - key: GOOGLE_API_KEY
-        sync: false # You will enter this in Render UI
+        sync: false
       - key: TAVILY_API_KEY
-        sync: false # You will enter this in Render UI
+        sync: false
       - key: FRONTEND_URL
         value: https://veritas-ai-truth-layer-1.onrender.com
-
     healthCheckPath: /health
-
-  # ⚛️ React Frontend
-  - type: web
-    name: truthlayer-frontend
-    env: static
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    rootDir: frontend
-    envVars:
-      - key: VITE_API_BASE_URL
-        value: https://truthlayer-backend.onrender.com # Points to the backend service

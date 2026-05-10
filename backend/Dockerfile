@@ -1,7 +1,17 @@
+# ── STAGE 1: Build Frontend ──────────────────────────────────────────────────
+FROM node:18-alpine AS frontend-builder
+WORKDIR /frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+# Use relative API path for single-URL deployment
+RUN VITE_API_BASE_URL="" npm run build
+
+# ── STAGE 2: Build Backend ───────────────────────────────────────────────────
 FROM python:3.11-slim
 
-# Create non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Create a non-root user WITH a home directory (-m)
+RUN groupadd -r appuser && useradd -r -g appuser -m appuser
 
 WORKDIR /app
 
@@ -10,19 +20,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libmupdf-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies first (layer-cached)
-COPY requirements.txt .
+# Install Python dependencies
+COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy backend source
+COPY backend/ .
 
-# Use non-root user
-RUN chown -R appuser:appuser /app
+# Copy built frontend from Stage 1 into the backend's dist folder
+COPY --from=frontend-builder /frontend/dist ./dist
+
+# Fix permissions for the entire /app directory AND the home directory
+RUN chown -R appuser:appuser /app /home/appuser
 USER appuser
 
 EXPOSE 8000
 
-# Use gunicorn + uvicorn workers for production (matches render.yaml)
+# Use gunicorn + uvicorn workers for production
+# Added --tmp-dir /tmp to avoid permission issues in the user home
 CMD ["gunicorn", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", \
-     "main:app", "--bind", "0.0.0.0:8000", "--timeout", "120"]
+     "main:app", "--bind", "0.0.0.0:8000", "--timeout", "120", "--worker-tmp-dir", "/dev/shm"]
