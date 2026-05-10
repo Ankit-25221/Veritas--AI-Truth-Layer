@@ -1,7 +1,6 @@
 # ── STAGE 1: Build Frontend ──────────────────────────────────────────────────
 FROM node:18-alpine AS frontend-builder
 WORKDIR /frontend
-# Path relative to root
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
@@ -21,7 +20,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-# Path relative to root context
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
@@ -38,6 +36,6 @@ USER appuser
 
 EXPOSE 8000
 
-# Start command with shared memory optimization for Gunicorn
+# Start command
 CMD ["gunicorn", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", \
      "main:app", "--bind", "0.0.0.0:8000", "--timeout", "120", "--worker-tmp-dir", "/dev/shm"]

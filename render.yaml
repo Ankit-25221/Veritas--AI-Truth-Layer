@@ -3,7 +3,7 @@ services:
   - type: web
     name: truthlayer-app
     env: docker
-    dockerfilePath: backend/Dockerfile
+    dockerfilePath: Dockerfile
     dockerContext: .
     envVars:
       - key: GOOGLE_API_KEY
