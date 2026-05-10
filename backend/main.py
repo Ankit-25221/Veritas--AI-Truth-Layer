@@ -40,7 +40,7 @@ app = FastAPI(
 )
 
 # ── CORS ─────────────────────────────────────────────────────────────────────
-frontend_url = os.getenv("FRONTEND_URL", "").strip().rstrip("/")
+frontend_url = os.getenv("FRONTEND_URL", "").strip()
 origins = [
     "http://localhost:5173",
     "http://localhost:3000",
@@ -48,7 +48,6 @@ origins = [
 ]
 if frontend_url:
     origins.append(frontend_url)
-    origins.append(f"{frontend_url}/")
 
 app.add_middleware(
     CORSMiddleware,

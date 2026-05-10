@@ -11,7 +11,7 @@ services:
       - key: TAVILY_API_KEY
         sync: false # You will enter this in Render UI
       - key: FRONTEND_URL
-        value: https://truthlayer.onrender.com # Change this after frontend is deployed
+        value: https://veritas-ai-truth-layer-1.onrender.com
 
     healthCheckPath: /health
 
