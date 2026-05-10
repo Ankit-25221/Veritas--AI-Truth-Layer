@@ -12,4 +12,6 @@ services:
         sync: false
       - key: FRONTEND_URL
         value: https://veritas-ai-truth-layer-1.onrender.com
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
     healthCheckPath: /health

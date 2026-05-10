@@ -1,16 +1,16 @@
 # ── STAGE 1: Build Frontend ──────────────────────────────────────────────────
 FROM node:18-alpine AS frontend-builder
 WORKDIR /frontend
+# Path relative to root
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
-# Use relative API path for single-URL deployment
 RUN VITE_API_BASE_URL="" npm run build
 
 # ── STAGE 2: Build Backend ───────────────────────────────────────────────────
 FROM python:3.11-slim
 
-# Create a non-root user WITH a home directory (-m)
+# Create a non-root user with a home directory
 RUN groupadd -r appuser && useradd -r -g appuser -m appuser
 
 WORKDIR /app
@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
+# Path relative to root context
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
@@ -28,16 +29,15 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy backend source
 COPY backend/ .
 
-# Copy built frontend from Stage 1 into the backend's dist folder
+# Copy built frontend from Stage 1
 COPY --from=frontend-builder /frontend/dist ./dist
 
-# Fix permissions for the entire /app directory AND the home directory
+# Fix permissions
 RUN chown -R appuser:appuser /app /home/appuser
 USER appuser
 
 EXPOSE 8000
 
-# Use gunicorn + uvicorn workers for production
-# Added --tmp-dir /tmp to avoid permission issues in the user home
+# Start command with shared memory optimization for Gunicorn
 CMD ["gunicorn", "-w", "1", "-k", "uvicorn.workers.UvicornWorker", \
      "main:app", "--bind", "0.0.0.0:8000", "--timeout", "120", "--worker-tmp-dir", "/dev/shm"]
