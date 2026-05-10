@@ -10,6 +10,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from api.routes import router
 from utils.logger import get_logger
 
@@ -39,15 +40,29 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ── CORS ─────────────────────────────────────────────────────────────────────
-frontend_url = os.getenv("FRONTEND_URL", "").strip()
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Hardcode known production origins so they always work regardless of env vars.
 origins = [
+    # Local development
     "http://localhost:5173",
     "http://localhost:3000",
     "http://localhost:4173",
+    # Production — both Render services
+    "https://veritas-ai-truth-layer.onrender.com",
+    "https://veritas-ai-truth-layer-1.onrender.com",
 ]
-if frontend_url:
-    origins.append(frontend_url)
+
+# Also support any additional URLs passed via FRONTEND_URL env var
+# (supports comma-separated values for multiple origins).
+# Example: FRONTEND_URL=https://my-domain.com,https://staging.my-domain.com
+frontend_url_env = os.getenv("FRONTEND_URL", "").strip()
+if frontend_url_env:
+    for raw_url in frontend_url_env.split(","):
+        url = raw_url.strip().rstrip("/")
+        if url and url not in origins:
+            origins.append(url)
+
+logger.info(f"CORS allowed origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -55,10 +70,17 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 app.include_router(router, prefix="/api/v1", tags=["Fact-Check"])
+
+# ── Serve Frontend Static Files ───────────────────────────────────────────────
+# This allows the backend to host the frontend on the same URL.
+# The 'dist' folder will be created during the Docker build.
+if os.path.exists("dist"):
+    app.mount("/", StaticFiles(directory="dist", html=True), name="static")
 
 
 @app.get("/health", tags=["System"])
